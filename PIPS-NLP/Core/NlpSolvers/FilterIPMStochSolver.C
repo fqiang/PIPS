@@ -118,25 +118,27 @@ int FilterIPMStochSolver::solve( Data *prob_in, Variables *iterate, Residuals * 
   /* ----------------------------- Start main loop ------------------------- */
   do
   {
-	iter++; g_iterNumber=iter; giterNum = iter;
+    iter++; g_iterNumber=iter; giterNum = iter;
 
+	  MESSAGE("calling iterateStarted .. ");
     stochFactory->iterateStarted();
 
 	EvalErrScaling(iterate);
 
     // evaluate functions (obj, con, jac, hes)
 	prob->evalData(iterate);
+	  MESSAGE("after evalData .. ");
 	// update BarrObjValue with damping rate
 	prob->BarrObj = prob->BarrObjValue(vars, prob->PriObj, FilterIPMOpt->k_d);
-
+	  MESSAGE("after BarrObjValue .. ");
 
     // evaluate residuals
     resid->calcresids(prob, iterate);
-	
+    MESSAGE("after calcresids .. ");
 	// initialize the filter  and some parameters
     if(iter==1 )
 	  FilterInitializeAndPara(prob, iterate,resid);
-
+    MESSAGE("after FilterInitializeAndPara .. ");
     //  termination test:
     status_code = this->doStatus( prob, iterate, resid, iter, mu, 0 );
 	if( status_code != NOT_FINISHED ) 
@@ -144,13 +146,14 @@ int FilterIPMStochSolver::solve( Data *prob_in, Variables *iterate, Residuals * 
 
 	// update barrier parameter mu, reset filter if necessary
 	muChanged=updateBarrierParameter(prob, iterate, resid);
+	  MESSAGE("after updateBarrierParameter .. ");
 
     //add damping term to where var/con only has single bound, see filter line search IPM paper section 3.7 
     addDampingTermToKKT(resid);
-
+    MESSAGE("after addDampingTermToKKT ...");
     // compute search direction and update regularization if necessary
 	compute_step_WithRegularization( prob, iterate, resid,steps);
-
+	  MESSAGE("after compute_step_WithRegularization ...");
 	//apply frac-to-boundary to get max primal step length
 	alp_pri_max = vars->stepMax_Pri(steps,tau_j);  
 

@@ -11,7 +11,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
-
+#include "global_var.h"
 long long SimpleVector::numberOfNonzeros()
 {
   int i, count = 0;
@@ -219,9 +219,11 @@ void SimpleVector::componentDiv ( OoqpVector& vec )
 void SimpleVector::writeToStream(std::ostream& out) const
 {
   //this->writefToStream( out, "%{value}" );
-  for(int i = 0; i < (10<n)?10:n; i++ ) {
-    printf("%22.16f\n", v[i]);
+  MESSAGE(" enter writeToStream ");
+  for(int i = 0; i < n; i++ ) {
+    out<<v[i]<<",";
   }
+  out<<std::endl;
 }
 
 void SimpleVector::writefToStream( std::ostream& out,

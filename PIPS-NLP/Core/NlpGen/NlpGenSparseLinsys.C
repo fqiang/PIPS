@@ -15,6 +15,8 @@
 #include "NlpGenVars.h"
 #include "SparseGenMatrixHandle.h"
 
+#include "global_var.h"
+
 extern int gOuterSolve;
 extern int separateHandDiag;
 //extern int gAssumeMatSingular;
@@ -124,8 +126,10 @@ void NlpGenSparseLinsys::setAdditiveDiagonal()
 
 void NlpGenSparseLinsys::solveCompressed( OoqpVector & arhs )
 {
+  MESSAGE("enter NlpGenSparseLinsys::solveCompressed");
   solver->solve( arhs );
   KryIter=solver->KryIter;
+  MESSAGE("exit NlpGenSparseLinsys::solveCompressed");
 }  
 
 NlpGenSparseLinsys::~NlpGenSparseLinsys()

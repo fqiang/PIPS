@@ -14,7 +14,7 @@
 #include "MpsReader.h"
 
 #include "LinearAlgebraPackage.h"
-
+#include "global_var.h"
 #include <iostream> 
 #include <fstream>
 #include <stdlib.h>
@@ -784,6 +784,7 @@ int NlpGenVars::validNonZeroPattern()
     return 0;
   }
   
+  MESSAGE("end validNonZeroPattern");
   return 1;
 }
 

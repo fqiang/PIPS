@@ -449,8 +449,8 @@ void StochVector::writeToStream( std::ostream& out ) const
   out << "---" << std::endl;
   vec->writeToStream(out);
   out << "~~~" << std::endl;
-  //for(size_t it=0; it<children.size(); it++) 
-  //  children[it]->writeToStream(out);
+  for(size_t it=0; it<children.size(); it++)
+    children[it]->writeToStream(out);
 }
 
 void StochVector::writefToStream( std::ostream& out,

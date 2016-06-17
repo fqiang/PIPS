@@ -486,6 +486,7 @@ void
 FilterIPMSolver::compute_step_WithRegularization(Data *prob_in, Variables *iterate_in, 
 					Residuals * resid_in, Variables *step_in, bool inSOC)
 {
+  MESSAGE("enter compute_step_WithRegularization ...");
   NlpGenData *prob 		= (NlpGenData *) prob_in;
   NlpGenVars *vars 		= (NlpGenVars *) iterate_in;
   NlpGenVars *steps 	= (NlpGenVars *) step_in;
@@ -494,7 +495,7 @@ FilterIPMSolver::compute_step_WithRegularization(Data *prob_in, Variables *itera
   if(inSOC==false){
 	// form rhs of linear system:
 	resid_in->set_r3_xz_alpha( iterate_in, -mu );   
-
+	MESSAGE("after set_r3_xz_alpha ... ");
 	// DoEvalReg =	1 -> when factorizing the matrix, add regularizations to correct inertia and singularity
 	//			  	2 -> when factorizing the matrix, add regularizations to correct singularity only
 	//			  	0 -> when factorizing the matrix, force to use primal regularizaion. called iff xWx tests fail
@@ -502,15 +503,17 @@ FilterIPMSolver::compute_step_WithRegularization(Data *prob_in, Variables *itera
 	  PD_Reg->DoEvalReg=2;
 	else 
 	  PD_Reg->DoEvalReg=1;
-
+	MESSAGE("before factor ... ");
 	sysNLP->factor(prob, iterate_in,PD_Reg);
-
+	MESSAGE("after factor ... ");
     double xWx, thd;
 	double kappa_test = gkappa_tWt;
 	if(gkappaWithMu) kappa_test *= mu;
 
+	MESSAGE("gkappaWithMu "<<gkappaWithMu << "  kappa_test "<<kappa_test);
     if(gdWd_test<=1){
 	  // solve d step, compute dWd and thd (this is the first fact/solve)
+      MESSAGE("before solve_IterRefine ... ");
 	  sysNLP->solve_IterRefine(prob, iterate_in, resid_in, step_in, KKT_Resid, KKT_sol);
       step_in->negate();
 	  xWx_0 = get_xWx(prob_in, resid_in,step_in);
@@ -518,14 +521,16 @@ FilterIPMSolver::compute_step_WithRegularization(Data *prob_in, Variables *itera
     }
 	else if(gdWd_test>=2){
 	  // solve n&t steps, do tWt test
+	  MESSAGE("before solve_NTsteps ... ");
 	  sysNLP->solve_NTsteps(prob, iterate_in, resid_in, n_step, t_step, step_in);
       step_in->negate();
 	  xWx_0 = get_xWx(prob_in, resid_in,t_step);
 	  thd_0 = kappa_test*steps->computeXSDD(t_step);	    
     }
-	
-	if(gUseDualRegAlg>0) computeQuantitiesForDualReg(prob_in,iterate_in,resid_in,step_in, PD_Reg);
 
+  MESSAGE("before computeQuantitiesForDualReg ... ");
+	if(gUseDualRegAlg>0) computeQuantitiesForDualReg(prob_in,iterate_in,resid_in,step_in, PD_Reg);
+	MESSAGE(" after computeQuantitiesForDualReg .. ");
 	// do inertia-free test, if fails, add regularization
 	xWx   = xWx_0;
 	thd   = thd_0;
@@ -533,6 +538,7 @@ FilterIPMSolver::compute_step_WithRegularization(Data *prob_in, Variables *itera
 	  while( xWx<thd ){
 	    PD_Reg->DoEvalReg=0;
 		sysNLP->factor(prob, iterate_in,PD_Reg);
+		MESSAGE("after factor2 ... ");
 
 		if(gdWd_test==1){
 		  // get d, do dWd test
@@ -547,6 +553,7 @@ FilterIPMSolver::compute_step_WithRegularization(Data *prob_in, Variables *itera
 		  step_in->negate();
 		  xWx = get_xWx(prob_in, resid_in,t_step);
 		  thd = kappa_test*steps->computeXSDD(t_step);
+		  MESSAGE("after computeXSDD ...");
 		}
 
 		if( xWx >= thd ){
@@ -571,7 +578,8 @@ FilterIPMSolver::compute_step_WithRegularization(Data *prob_in, Variables *itera
       xWx_done 	= get_xWx(prob_in, resid_in,step_in);  
 	  thd_done 	= kappa_test*steps->computeDD();
 	}
-  }  
+  }
+  MESSAGE("end compute_step_WithRegularization");
 }
 
 

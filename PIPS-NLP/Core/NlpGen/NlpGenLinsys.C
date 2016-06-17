@@ -20,6 +20,9 @@
 
 #include "SparseGenMatrix.h"
 
+#include "global_var.h"
+#include "mpi.h"
+
 #include <stdlib.h>
 
 
@@ -466,6 +469,7 @@ double NlpGenLinsys::computeResidual_FullKKT(NlpGenData * data, NlpGenResiduals 
 void NlpGenLinsys::solve(Data * prob_in, Variables *vars_in,
 			Residuals *res_in, Variables *step_in)
 {
+  MESSAGE("enter solve");
   NlpGenData      * prob  = (NlpGenData *) prob_in;
   NlpGenVars      * vars  = (NlpGenVars *) vars_in;
   NlpGenVars      * step  = (NlpGenVars *) step_in;
@@ -498,6 +502,7 @@ void NlpGenLinsys::solve(Data * prob_in, Variables *vars_in,
     step->x->axzpy (  1.0, wInvPhi,   *resid->rw );
     step->x->axdzpy( -1.0, *resid->rphi, *vars->w, *ixupp );
   }
+  MESSAGE("1/5 of solve");
   // start by partially computing step->s
   step->s->copyFrom( *resid->rz );
   if( mclow > 0 ) {
@@ -521,6 +526,7 @@ void NlpGenLinsys::solve(Data * prob_in, Variables *vars_in,
   step->y->copyFrom( *resid->rA );
   step->z->copyFrom( *resid->rC );
 
+  MESSAGE("2/5 of solve");
   {
     // Unfortunately, we need a temporary  OoqpVector for the solve,
     // Use step->lambda or step->pi
@@ -530,10 +536,12 @@ void NlpGenLinsys::solve(Data * prob_in, Variables *vars_in,
     } else {
       ztemp = step->pi;
     }	
+    MESSAGE("before solveXYZS ...");
     this->solveXYZS( *step->x, *step->y, *step->z, *step->s,
 		     *ztemp, prob );
   }
 
+  MESSAGE("3/5 of solve");
   {
     if( mclow > 0 ) {
       step->t->copyFrom( *step->s );
@@ -562,6 +570,7 @@ void NlpGenLinsys::solve(Data * prob_in, Variables *vars_in,
       step->gamma->axzpy( -1.0, *vars->gamma, *step->v );
       step->gamma->divideSome( *vars->v, *ixlow );
     }
+    MESSAGE("4/5 of solve");
     if( nxupp > 0 ) {
       step->w->copyFrom( *resid->rw );
       step->w->axpy( -1.0, *step->x );
@@ -571,9 +580,10 @@ void NlpGenLinsys::solve(Data * prob_in, Variables *vars_in,
       step->phi->axzpy( -1.0, *vars->phi, *step->w );
       step->phi->divideSome( *vars->w, *ixupp );
     }
+    MESSAGE("5/5 of solve");
   }  
   assert( step->validNonZeroPattern() );
-
+  MESSAGE("end of solve");
 }
 
 
@@ -587,16 +597,18 @@ void NlpGenLinsys::solve_IterRefine(Data * prob_in, Variables *vars_in,
   NlpGenVars      		* kkt_sol  		= (NlpGenVars *) KKT_sol_in;
   NlpGenResiduals      	* kkt_resid  	= (NlpGenResiduals *) KKT_Resid_in;
 
+  MESSAGE("before solve ...");
   solve(prob_in, vars_in,res_in, step_in);
-
+  MESSAGE("after  solve ...");
   if (gDoIR_Full==1){
 	//set kkt_rhs --- now kkt_resid is the rhs of kkt system
 	kkt_resid->copyFrom(resid);
 	kkt_sol->copy(step);
 
 	//compute residual of the kkt system, do IR if required;	
+	MESSAGE("before computeResidual_FullKKT ...");
 	prob->linsysRes_Full = computeResidual_FullKKT(prob, kkt_resid, kkt_sol, vars);
-	
+	MESSAGE("after computeResidual_FullKKT ...");
     if( prob->linsysRes_Full > gIRtol){
 	  double currentRes=0, ir_iter=0; 
 	  
@@ -621,7 +633,7 @@ void NlpGenLinsys::solve_IterRefine(Data * prob_in, Variables *vars_in,
 	  }
    	}
   }
-  
+  MESSAGE("end solve_IterRefine ... ");
 }
 
 
@@ -755,7 +767,7 @@ void NlpGenLinsys::solveXYZS( OoqpVector& stepx, OoqpVector& stepy,
   if(gOuterSolve<3)
   	stepz.axzpy( -1.0, *nomegaInv, steps );
 
-
+  MESSAGE("gOuterSolve "<<gOuterSolve);
   if(gOuterSolve==1) {
     ///////////////////////////////////////////////////////////////
     // Iterative refinement and Schur complement based decomposition, compress s
@@ -774,14 +786,19 @@ void NlpGenLinsys::solveXYZS( OoqpVector& stepx, OoqpVector& stepy,
     ///////////////////////////////////////////////////////////////
     // Default solve - Schur complement based decomposition or petsc, do not compress s
     ///////////////////////////////////////////////////////////////
-    if(gUsePetscOuter==1&&gUsePetsc==1) 
-	  solveCompressedAugXSYZ_PETSC(stepx, steps, stepy, stepz, prob);
-	else
+    if(gUsePetscOuter==1&&gUsePetsc==1) {
+      MESSAGE("before solveCompressedAugXSYZ_PETSC ...");
+	    solveCompressedAugXSYZ_PETSC(stepx, steps, stepy, stepz, prob);
+    }
+	else {
+	  MESSAGE("before solveCompressedAugXSYZ ...");
 	  solveCompressedAugXSYZ(stepx, steps, stepy, stepz, prob);
+	}
   } else if(gOuterSolve==2){
     ///////////////////////////////////////////////////////////////
     // BiCGStab, compress s (have never been tested)
     ///////////////////////////////////////////////////////////////
+    MESSAGE("before solveCompressedBiCGStab ...");
     solveCompressedBiCGStab(stepx,stepy,stepz,prob);
   } else if(gOuterSolve==4 || gOuterSolve==5){
     ///////////////////////////////////////////////////////////////
@@ -831,7 +848,6 @@ void NlpGenLinsys::separateVarsXSYZ( OoqpVector& x_in, OoqpVector& s_in,
   factory->separateVarsXSYZ( x_in, s_in, y_in, z_in, vars_in );
 }
 
-
 void NlpGenLinsys::solveCompressedAugXSYZ(OoqpVector& stepx, OoqpVector& steps,
 					   OoqpVector& stepy,
 					   OoqpVector& stepz,
@@ -839,24 +855,58 @@ void NlpGenLinsys::solveCompressedAugXSYZ(OoqpVector& stepx, OoqpVector& steps,
 {
     this->joinRHSXSYZ( *rhs, stepx, steps, stepy, stepz );
 	sol->copyFrom(*rhs);
+	  MESSAGE("before solveCompressed... ");
     this->solveCompressed( *sol );
-	
+    MESSAGE("after solveCompressed... ");
+
 	//use res as residual
 	res->copyFrom(*rhs);	
     //separate var and compute residual,  do IR if required;	
+	MPI_Barrier(MPI_COMM_WORLD);
+  ofstream of;
+  ostringstream fn;
+  fn<<giterNum<<"res.txt"<<gmyid;
+  of.open(fn.str().c_str());
+  of<<"res"<<std::endl;
+  res->writeToStream(of);
+  of<<"sol"<<std::endl;
+  sol->writeToStream(of);
+  of<<"stepx"<<std::endl;
+  stepx.writeToStream(of);
+  of<<"steps"<<std::endl;
+  steps.writeToStream(of);
+  of<<"stepy"<<std::endl;
+  stepy.writeToStream(of);
+  of<<"stepz"<<std::endl;
+  stepz.writeToStream(of);
+  of.close();
+  MPI_Barrier(MPI_COMM_WORLD);
 	prob->linsysRes = computeResidual(prob, *res, *sol, stepx, steps, stepy, stepz);
-	
+	MESSAGE("after computeResidual... "<<prob->linsysRes);
+
+
 	if(gDoIR_Aug==1 && prob->linsysRes > gIRtol){
 	  double currentRes=0, ir_iter=0;	
 	  int callBackBestSol = 0;
-	  
+	  MESSAGE("gMaxIR "<<gMaxIR << " gIRtol"<<prob->linsysRes);
+
+
 	  while(ir_iter<gMaxIR && prob->linsysRes > gIRtol){
+	    MESSAGE(" "<<ir_iter << " "<<prob->linsysRes);
 	    sol2->copyFrom(*res);
 	    this->solveCompressed( *sol2 );
-	  
+	    MESSAGE("after solveCompressed ...");
+	    MPI_Barrier(MPI_COMM_WORLD);
+
+	    MESSAGE(" prob->linsysRes "<<prob->linsysRes);
 	    sol2->axpy(1.0,*sol);
+//	    sol->print();
+//	    sol2->print();
+	    MPI_Barrier(MPI_COMM_WORLD);
 	    res->copyFrom(*rhs);	
 	    currentRes = computeResidual(prob, *res, *sol2, stepx, steps, stepy, stepz);  
+	    MESSAGE("currentRes "<<currentRes);
+	    MPI_Barrier(MPI_COMM_WORLD);
 
 	    if(currentRes < prob->linsysRes){
 		  prob->linsysRes = currentRes;
@@ -867,9 +917,10 @@ void NlpGenLinsys::solveCompressedAugXSYZ(OoqpVector& stepx, OoqpVector& steps,
 		}
 		ir_iter++;
 	  }
-
+	  MESSAGE("after while... ");
 	  if(callBackBestSol == 1)
 	    this->separateVarsXSYZ( stepx, steps, stepy, stepz, *sol);
+
 	}
 
 	prob->KryIter = KryIter;
