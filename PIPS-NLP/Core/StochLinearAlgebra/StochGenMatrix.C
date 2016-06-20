@@ -10,6 +10,7 @@
 #include "StochVector.h"
 #include "SimpleVector.h"
 
+#include "global_var.h"
 using namespace std;
 
 StochGenMatrix::StochGenMatrix(int id, 
@@ -340,7 +341,7 @@ void StochGenMatrix::transMult ( double beta,   OoqpVector& y_,
   if(iAmDistrib) {
     int locn=yvec.length();
     double* buffer = new double[locn];
-
+    MESSAGE("transMult - mpiComm -");
     MPI_Allreduce(yvec.elements(), buffer, locn, MPI_DOUBLE, MPI_SUM, mpiComm);
     yvec.copyFromArray(buffer);
 

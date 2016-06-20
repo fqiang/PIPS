@@ -343,12 +343,14 @@ void NlpGenLinsys::computeDiagonals( OoqpVector& dd_, OoqpVector& omega,
 double NlpGenLinsys::computeResidual(NlpGenData * data, OoqpVector & res_, OoqpVector & sol_,
 			OoqpVector & solx_,OoqpVector & sols_,OoqpVector & soly_,OoqpVector & solz_)
 {
+  MESSAGE("enter computeResidual - ");
   double result = 0.0;
   
   matXSYZMult(1.0,res_,-1.0, sol_, data,solx_,sols_,soly_,solz_);
 
   result = res_.infnorm();
 
+  MESSAGE("exit computeResidual - ");
   return result;
 }
 
@@ -900,7 +902,7 @@ void NlpGenLinsys::solveCompressedAugXSYZ(OoqpVector& stepx, OoqpVector& steps,
   of<<"stepz"<<std::endl;
   stepz.writeToStream(of);
   of.close();
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD);
 	prob->linsysRes = computeResidual(prob, *res, *sol, stepx, steps, stepy, stepz);
 	MESSAGE("after computeResidual... "<<prob->linsysRes);
 
@@ -916,21 +918,25 @@ void NlpGenLinsys::solveCompressedAugXSYZ(OoqpVector& stepx, OoqpVector& steps,
 	    sol2->copyFrom(*res);
 	    this->solveCompressed( *sol2 );
 	    MESSAGE("after solveCompressed ...");
-	    MPI_Barrier(MPI_COMM_WORLD);
+//	    MPI_Barrier(MPI_COMM_WORLD);
 
 	    MESSAGE(" prob->linsysRes "<<prob->linsysRes);
 	    sol2->axpy(1.0,*sol);
 //	    sol->print();
 //	    sol2->print();
-	    MPI_Barrier(MPI_COMM_WORLD);
+//	    MPI_Barrier(MPI_COMM_WORLD);
 	    res->copyFrom(*rhs);	
+	    MESSAGE(" after copyfrom");
 	    currentRes = computeResidual(prob, *res, *sol2, stepx, steps, stepy, stepz);  
+	    MESSAGE(" after computeResidual");
+
 	    MESSAGE("currentRes "<<currentRes);
-	    MPI_Barrier(MPI_COMM_WORLD);
+//	    MPI_Barrier(MPI_COMM_WORLD);
 
 	    if(currentRes < prob->linsysRes){
 		  prob->linsysRes = currentRes;
 		  sol->copyFrom(*sol2);		
+		  MESSAGE("after copy-From ");
 	    }else{
 	      callBackBestSol=1;
 	      break;
@@ -1480,10 +1486,11 @@ void NlpGenLinsys::matXSYZMult( double beta,  OoqpVector& res_,
 			 OoqpVector& soly_, 
 			 OoqpVector& solz_)
 {
-
+  MESSAGE("enter matXSYZMult");
   this->separateVarsXSYZ( solx_, sols_, soly_, solz_, sol_ );
   this->separateVarsXSYZ( *resx, *ress,*resy, *resz, res_);
 
+  MESSAGE(" 1/6  matXSYZMult");
   // if separateHandDiag==1, 	dd = complement part + regularizaion
   // 			 otherwise,	dd = complement part + regularizaion + DiagonalOfQ, 	
   // dq= DiagonalOfQ
@@ -1498,7 +1505,7 @@ void NlpGenLinsys::matXSYZMult( double beta,  OoqpVector& res_,
   data->ATransmult(1.0, *resx, alpha, soly_);
   data->CTransmult(1.0, *resx, alpha, solz_);
   
-
+  MESSAGE("3/6 matXSYZMult");
   ress->scale(beta);
   ress->axpy(-alpha,solz_);
   ress->axzpy(alpha,*temp_diagS,sols_);
@@ -1510,6 +1517,7 @@ void NlpGenLinsys::matXSYZMult( double beta,  OoqpVector& res_,
   resz->axpy(-alpha, sols_);
   resz->axzpy(alpha, *temp_diagZ, solz_);
 
+  MESSAGE("5/6 matXSYZMult");
   //cout << "resz norm: " << resz->twonorm() << endl;
   this->joinRHSXSYZ( res_, *resx, *ress, *resy, *resz );
 
@@ -1517,6 +1525,7 @@ void NlpGenLinsys::matXSYZMult( double beta,  OoqpVector& res_,
   if(separateHandDiag != 1 ){
     dd->axpy(1,*dq);
   }  
+  MESSAGE("exit matXSYZMult");
 }
 
 

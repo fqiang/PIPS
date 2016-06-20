@@ -19,6 +19,8 @@
 
 #include "RegularizationAlg.h"
 
+#include "global_var.h"
+
 #ifndef MIN
 #define MIN(a,b) ((a > b) ? b : a)
 #endif
@@ -455,6 +457,7 @@ void sLinsys::addLnizi(sData *prob, OoqpVector& z0_, OoqpVector& zi_)
 
 void sLinsys::solveCompressed( OoqpVector& rhs_ )
 {
+  MESSAGE("enter sLinsys::solveCompressed");
   StochVector& rhs = dynamic_cast<StochVector&>(rhs_);
 #ifdef TIMING
   //double tTot=MPI_Wtime();
@@ -465,6 +468,7 @@ void sLinsys::solveCompressed( OoqpVector& rhs_ )
 #ifdef TIMING
   //cout << "SolveCompressed took: " << (MPI_Wtime()-tTot) << endl;
 #endif
+  MESSAGE("exit sLinsys::solveCompressed");
 }
 
 

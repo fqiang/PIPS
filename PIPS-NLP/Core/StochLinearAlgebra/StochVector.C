@@ -15,6 +15,8 @@
 #include <limits>
 #include <math.h>
 
+#include "global_var.h"
+
 StochVector::StochVector(int n_, MPI_Comm mpiComm_, int isDistributed/*=-1*/)
   : OoqpVector(n_), parent(NULL), mpiComm(mpiComm_), treeIDX(0), firstDoNumOfNonZero(true),
     iAmDistrib(isDistributed)
@@ -634,21 +636,33 @@ int StochVector::matchesNonZeroPattern( OoqpVector& select_ )
 #else
 int StochVector::matchesNonZeroPattern( OoqpVector& select_ )
 {
+  MESSAGE("enter matchesNonZeroPattern");
+  MESSAGE("MPI_COMM_WORLD"<<MPI_COMM_WORLD);
+  MESSAGE("MPI_COMM_NULL"<<MPI_COMM_NULL);
+  MESSAGE("MPI_COMM_SELF"<<MPI_COMM_SELF);
+  MESSAGE("iAmDistrib "<<iAmDistrib);
+  MESSAGE("mpiComm "<<mpiComm);
+
   StochVector& select = dynamic_cast<StochVector&>(select_);
   assert(children.size() == select.children.size());
 
   int match = vec->matchesNonZeroPattern(*select.vec);
+  MESSAGE("match "<<match);
   if(!match) return 0;
-
-  for(size_t it=0; it<children.size() && match; it++) 
+  MESSAGE("children size "<<children.size());
+  for(size_t it=0; it<children.size() && match; it++) {
+    MESSAGE("child - "<<it<<"  match "<<match);
     match = children[it]->matchesNonZeroPattern(*select.children[it]);
+    MESSAGE("end for - match "<<match);
+  }
 
   if(iAmDistrib) {
+    MESSAGE("inside iAmDistrib - "<<mpiComm);
     int matchG=0;
     MPI_Allreduce(&match, &matchG, 1, MPI_INT, MPI_MIN, mpiComm);
     match = matchG;
   }
-  
+  MESSAGE("exit matchesNonZeroPattern");
   return match;
 }
 #endif
@@ -774,9 +788,10 @@ int StochVector::somePositive( OoqpVector& select_ )
 
   for(size_t it=0; it<children.size() && somePos; it++)
     somePos = children[it]->somePositive(*select.children[it]);
-
+  MESSAGE("somePositive - isAmDistrib "<<iAmDistrib);
   if(iAmDistrib) {
     int somePosG=0;
+    MESSAGE("somePositive - mpiComm "<<mpiComm);
     MPI_Allreduce(&somePos, &somePosG, 1, MPI_INT, MPI_MIN, mpiComm);
     somePos = somePosG;
   }
