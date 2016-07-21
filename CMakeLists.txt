@@ -87,7 +87,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$")
       message(STATUS "Intel OpenMP libraries directory is ${LIBIOMP_LIBRARIES_DIR}")
 
     else() # Otherwise, fall back to GOMP (gcc OpenMP) runtime
-      set(OpenMP_CXX_FLAGS "-fopenmp -lgomp")
+      set(OpenMP_CXX_FLAGS "-lgomp")
       set(OpenMP_C_FLAGS "${OpenMP_CXX_FLAGS}")
       include_directories(${LIBGOMP_INCLUDE_DIR})
     endif()
