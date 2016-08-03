@@ -556,7 +556,7 @@ CoinPackedMatrix StructJuMPInput::getSecondStageConstraints(int scen) {
 
 	wmat.bottomAppendPackedMatrix(i_wmat);
 
-	wmat_map[scen] = wmat;
+	wmat_map[nodeid] = wmat;
 	assert(wmat.getNumCols() == nvar);
 	assert(wmat.getNumRows() == ncon_map[nodeid]);
 	IF_VERBOSE_DO(wmat.dumpMatrix(););
