@@ -41,7 +41,7 @@ void print_array(const std::string& msg, T* data, size_t len)
 #define PRINT_ARRAY(M, DATA, LEN) do { \
   if (ENABLE_VERBOSE) { std::ostringstream oss; 	\
 			for(size_t i=0;i<LEN;i++){ 	\
-				oss<<DATA[i]<<", ";    	\
+				oss<<(DATA)[i]<<", ";    	\
 			} \
 			std::cout<<"["<<gmyid<<"/"<<gnprocs<<"] "<< M << "Array [ " <<oss.str() <<" ]"<< std::endl; \
 			} \
